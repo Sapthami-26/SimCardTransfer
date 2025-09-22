@@ -1,58 +1,138 @@
 using SimCardApi.Models;
 using SimCardApi.Repositories.Interfaces;
+using System.Data;
+using System.Data.SqlClient;
+using System.Xml.Serialization;
 
 namespace SimCardApi.Repositories.Services
 {
     public class SimCardRepository : ISimCardRepository
     {
-        private static List<SimCard> _simCards = new List<SimCard>
-        {
-            new SimCard { Id = 1, MobileNumber = "9945258780", EmployeeName = "Kinglaya Nama", IsActive = true },
-            new SimCard { Id = 2, MobileNumber = "9545378071", EmployeeName = "Ravindra S", IsActive = true }
-        };
+        private readonly string _connectionString;
 
-        public async Task<IEnumerable<SimCard>> GetAllSimCardsAsync()
+        public SimCardRepository(IConfiguration configuration)
         {
-            return await Task.FromResult(_simCards);
+            _connectionString = configuration.GetConnectionString("DefaultConnection");
         }
 
-        public async Task<SimCard> GetSimCardByIdAsync(int id)
+        public async Task<IEnumerable<SimCard>> GetSimCardsByEmployeeIdAsync(int employeeId)
         {
-            var simCard = _simCards.FirstOrDefault(s => s.Id == id);
-            if (simCard == null)
+            var simCards = new List<SimCard>();
+            using (var connection = new SqlConnection(_connectionString))
             {
-                throw new InvalidOperationException($"SimCard with Id {id} not found.");
+                // Calls [dbo].[SimCard_GetSimCardsDetailsbyMEmpID]
+                using (var cmd = new SqlCommand("SimCard_GetSimCardsDetailsbyMEmpID", connection))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.AddWithValue("@MEmpID", employeeId);
+
+                    await connection.OpenAsync();
+                    using (var reader = await cmd.ExecuteReaderAsync())
+                    {
+                        while (await reader.ReadAsync())
+                        {
+                            simCards.Add(new SimCard
+                            {
+                                Id = reader.GetInt32(reader.GetOrdinal("MSimID")),
+                                MobileNumber = reader.GetString(reader.GetOrdinal("MobileNo")),
+                                EmployeeName = reader.GetString(reader.GetOrdinal("Employee")),
+                                IsActive = reader.GetBoolean(reader.GetOrdinal("IsSelected"))
+                            });
+                        }
+                    }
+                }
             }
-            return await Task.FromResult(simCard);
+            return simCards;
         }
 
-        public async Task AddSimCardAsync(SimCard simCard)
+        public async Task<IEnumerable<SimCard>> GetTransferDetailsByMasterIdAsync(int masterId)
         {
-            simCard.Id = _simCards.Max(s => s.Id) + 1;
-            _simCards.Add(simCard);
-            await Task.CompletedTask;
-        }
-
-        public async Task UpdateSimCardAsync(SimCard simCard)
-        {
-            var existingSimCard = _simCards.FirstOrDefault(s => s.Id == simCard.Id);
-            if (existingSimCard != null)
+            var simCards = new List<SimCard>();
+            using (var connection = new SqlConnection(_connectionString))
             {
-                existingSimCard.MobileNumber = simCard.MobileNumber;
-                existingSimCard.EmployeeName = simCard.EmployeeName;
-                existingSimCard.IsActive = simCard.IsActive;
+                // Calls [dbo].[SimCard_GetTranferDetailsByMasterID]
+                using (var cmd = new SqlCommand("SimCard_GetTranferDetailsByMasterID", connection))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.AddWithValue("@SCTID", masterId);
+
+                    await connection.OpenAsync();
+                    using (var reader = await cmd.ExecuteReaderAsync())
+                    {
+                        while (await reader.ReadAsync())
+                        {
+                            simCards.Add(new SimCard
+                            {
+                                MobileNumber = reader.GetString(reader.GetOrdinal("MobileNo")),
+                                EmployeeName = reader.GetString(reader.GetOrdinal("Employee"))
+                            });
+                        }
+                    }
+                }
             }
-            await Task.CompletedTask;
+            return simCards;
         }
 
-        public async Task DeleteSimCardAsync(int id)
+        public async Task<int> AddSimCardTransferAsync(SimCardTransferDto transferData)
         {
-            var simCardToRemove = _simCards.FirstOrDefault(s => s.Id == id);
-            if (simCardToRemove != null)
+            long masterId = 0;
+            using (var connection = new SqlConnection(_connectionString))
             {
-                _simCards.Remove(simCardToRemove);
+                await connection.OpenAsync();
+                var transaction = connection.BeginTransaction();
+                try
+                {
+                    // Calls [dbo].[SimCard_InsertSimCardsDetails]
+                    using (var cmd = new SqlCommand("SimCard_InsertSimCardsDetails", connection, transaction))
+                    {
+                        cmd.CommandType = CommandType.StoredProcedure;
+                        cmd.Parameters.AddWithValue("@MEmpID", transferData.CurrentEmployeeId);
+                        cmd.Parameters.AddWithValue("@TransferedTo", transferData.TransferToEmployeeId);
+
+                        SqlParameter outputParam = cmd.Parameters.Add("@SCTID", SqlDbType.BigInt);
+                        outputParam.Direction = ParameterDirection.Output;
+
+                        await cmd.ExecuteNonQueryAsync();
+
+                        masterId = Convert.ToInt64(outputParam.Value);
+                    }
+
+                    // Calls [dbo].[SimCard_InsertSimCardsTransferDetails]
+                    foreach (var simId in transferData.SimCardIds)
+                    {
+                        using (var cmd = new SqlCommand("SimCard_InsertSimCardsTransferDetails", connection, transaction))
+                        {
+                            cmd.CommandType = CommandType.StoredProcedure;
+                            cmd.Parameters.AddWithValue("@SCTID", masterId);
+                            cmd.Parameters.AddWithValue("@MSimID", simId);
+                            await cmd.ExecuteNonQueryAsync();
+                        }
+                    }
+                    transaction.Commit();
+                }
+                catch
+                {
+                    transaction.Rollback();
+                    throw;
+                }
             }
-            await Task.CompletedTask;
+            return (int)masterId;
+        }
+
+        public async Task UpdateSimCardMasterAsync(int simId, int newOwnerEmployeeId)
+        {
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                // Calls [dbo].[Simcard_UpdateSimcard_Master]
+                using (var cmd = new SqlCommand("Simcard_UpdateSimcard_Master", connection))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.AddWithValue("@MSimID", simId);
+                    cmd.Parameters.AddWithValue("@OwnerEmPIR", newOwnerEmployeeId);
+                    await connection.OpenAsync();
+                    await cmd.ExecuteNonQueryAsync();
+                }
+            }
         }
     }
 }

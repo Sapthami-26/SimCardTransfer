@@ -4,10 +4,9 @@ namespace SimCardApi.Repositories.Interfaces
 {
     public interface ISimCardRepository
     {
-        Task<IEnumerable<SimCard>> GetAllSimCardsAsync();
-        Task<SimCard> GetSimCardByIdAsync(int id);
-        Task AddSimCardAsync(SimCard simCard);
-        Task UpdateSimCardAsync(SimCard simCard);
-        Task DeleteSimCardAsync(int id);
+        Task<IEnumerable<SimCard>> GetSimCardsByEmployeeIdAsync(int employeeId);
+        Task<IEnumerable<SimCard>> GetTransferDetailsByMasterIdAsync(int masterId);
+        Task<int> AddSimCardTransferAsync(SimCardTransferDto transferData);
+        Task UpdateSimCardMasterAsync(int simId, int newOwnerEmployeeId);
     }
 }

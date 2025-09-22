@@ -15,49 +15,35 @@ namespace SimCardApi.Controllers
             _repository = repository;
         }
 
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<SimCard>>> GetSimCards()
+        [HttpGet("employee/{MempId}")]
+        public async Task<ActionResult<IEnumerable<SimCard>>> GetSimCardsByEmployee(int employeeId)
         {
-            var simCards = await _repository.GetAllSimCardsAsync();
+            var simCards = await _repository.GetSimCardsByEmployeeIdAsync(employeeId);
             return Ok(simCards);
         }
 
-        [HttpGet("{id}")]
-        public async Task<ActionResult<SimCard>> GetSimCard(int id)
+        [HttpGet("transfer/{MasterId}")]
+        public async Task<ActionResult<IEnumerable<SimCard>>> GetTransferDetailsByMasterId(int masterId)
         {
-            var simCard = await _repository.GetSimCardByIdAsync(id);
-
-            if (simCard == null)
+            var simCards = await _repository.GetTransferDetailsByMasterIdAsync(masterId);
+            if (simCards == null || !simCards.Any())
             {
                 return NotFound();
             }
-
-            return Ok(simCard);
+            return Ok(simCards);
         }
 
-        [HttpPost]
-        public async Task<ActionResult<SimCard>> PostSimCard(SimCard simCard)
+        [HttpPost("transfer")]
+        public async Task<ActionResult> PostSimCardTransfer([FromBody] SimCardTransferDto transferData)
         {
-            await _repository.AddSimCardAsync(simCard);
-            return CreatedAtAction(nameof(GetSimCard), new { id = simCard.Id }, simCard);
+            int masterId = await _repository.AddSimCardTransferAsync(transferData);
+            return CreatedAtAction(nameof(GetTransferDetailsByMasterId), new { masterId = masterId }, transferData);
         }
 
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutSimCard(int id, SimCard simCard)
+        [HttpPut("approve/{SimId}")]
+        public async Task<IActionResult> ApproveSimCardTransfer(int simId, [FromQuery] int newOwnerEmployeeId)
         {
-            if (id != simCard.Id)
-            {
-                return BadRequest();
-            }
-
-            await _repository.UpdateSimCardAsync(simCard);
-            return NoContent();
-        }
-
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteSimCard(int id)
-        {
-            await _repository.DeleteSimCardAsync(id);
+            await _repository.UpdateSimCardMasterAsync(simId, newOwnerEmployeeId);
             return NoContent();
         }
     }

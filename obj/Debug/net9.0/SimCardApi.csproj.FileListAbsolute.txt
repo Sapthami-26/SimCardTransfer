@@ -33,3 +33,10 @@ D:\Samsung\SimCardApi\obj\Debug\net9.0\refint\SimCardApi.dll
 D:\Samsung\SimCardApi\obj\Debug\net9.0\SimCardApi.pdb
 D:\Samsung\SimCardApi\obj\Debug\net9.0\SimCardApi.genruntimeconfig.cache
 D:\Samsung\SimCardApi\obj\Debug\net9.0\ref\SimCardApi.dll
+D:\Samsung\SimCardApi\bin\Debug\net9.0\System.Data.SqlClient.dll
+D:\Samsung\SimCardApi\bin\Debug\net9.0\runtimes\win-arm64\native\sni.dll
+D:\Samsung\SimCardApi\bin\Debug\net9.0\runtimes\win-x64\native\sni.dll
+D:\Samsung\SimCardApi\bin\Debug\net9.0\runtimes\win-x86\native\sni.dll
+D:\Samsung\SimCardApi\bin\Debug\net9.0\runtimes\unix\lib\net8.0\System.Data.SqlClient.dll
+D:\Samsung\SimCardApi\bin\Debug\net9.0\runtimes\win\lib\net8.0\System.Data.SqlClient.dll
+D:\Samsung\SimCardApi\obj\Debug\net9.0\SimCardApi.sourcelink.json
