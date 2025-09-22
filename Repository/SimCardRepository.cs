@@ -35,8 +35,8 @@ namespace SimCardApi.Repositories.Services
                             {
                                 Id = reader.GetInt32(reader.GetOrdinal("MSimID")),
                                 MobileNumber = reader.GetString(reader.GetOrdinal("MobileNo")),
-                                EmployeeName = reader.GetString(reader.GetOrdinal("Employee")),
-                                IsActive = reader.GetBoolean(reader.GetOrdinal("IsSelected"))
+                                // EmployeeName = reader.GetString(reader.GetOrdinal("Employee")),
+                                // IsActive = reader.GetBoolean(reader.GetOrdinal("IsSelected"))
                             });
                         }
                     }

@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("SimCardApi")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+dbc5c01fd86c08fe35e0b3d3b3e195fd7791e527")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+87713580cfde819d85c904e676a082119bd932d6")]
 [assembly: System.Reflection.AssemblyProductAttribute("SimCardApi")]
 [assembly: System.Reflection.AssemblyTitleAttribute("SimCardApi")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
