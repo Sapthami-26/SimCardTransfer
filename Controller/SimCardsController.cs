@@ -33,21 +33,12 @@ namespace SimCardApi.Controllers
             return Ok(simCards);
         }
 
-      [HttpPost("transfer")]
-public async Task<ActionResult> PostSimCardTransfer([FromBody] SimCardTransferDto transferData)
-{
-    int masterId = await _repository.AddSimCardTransferAsync(transferData);
-
-    // Create an anonymous object to hold the response data
-    var response = new
-    {
-        masterId = masterId,
-        simCardIds = transferData.SimCardIds
-    };
-
-    // Return the new object with a 200 OK status
-    return Ok(response);
-}
+        [HttpPost("transfer")]
+        public async Task<ActionResult> PostSimCardTransfer([FromBody] SimCardTransferDto transferData)
+        {
+            int masterId = await _repository.AddSimCardTransferAsync(transferData);
+            return Ok(masterId);
+        }
 
         [HttpPut("approve/{SimId}")]
         public async Task<IActionResult> ApproveSimCardTransfer(int simId, [FromQuery] int newOwnerEmployeeId)

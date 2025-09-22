@@ -2,7 +2,6 @@ using SimCardApi.Models;
 using SimCardApi.Repositories.Interfaces;
 using System.Data;
 using System.Data.SqlClient;
-using System.Xml.Serialization;
 
 namespace SimCardApi.Repositories.Services
 {
@@ -29,14 +28,30 @@ namespace SimCardApi.Repositories.Services
                     await connection.OpenAsync();
                     using (var reader = await cmd.ExecuteReaderAsync())
                     {
+                        // Get column ordinals safely, setting to -1 if not found
+                        int mSimIdOrdinal = reader.GetOrdinal("MSimID");
+                        int mobileNoOrdinal = reader.GetOrdinal("MobileNo");
+                        int isSelectedOrdinal = reader.GetOrdinal("IsSelected");
+                        int employeeNameOrdinal = -1;
+
+                        try
+                        {
+                            employeeNameOrdinal = reader.GetOrdinal("Employee");
+                        }
+                        catch (IndexOutOfRangeException)
+                        {
+                            // The "Employee" column does not exist in the result set.
+                            // employeeNameOrdinal will remain -1.
+                        }
+
                         while (await reader.ReadAsync())
                         {
                             simCards.Add(new SimCard
                             {
-                                Id = reader.GetInt32(reader.GetOrdinal("MSimID")),
-                                MobileNumber = reader.GetString(reader.GetOrdinal("MobileNo")),
-                                // EmployeeName = reader.GetString(reader.GetOrdinal("Employee")),
-                                // IsActive = reader.GetBoolean(reader.GetOrdinal("IsSelected"))
+                                Id = reader.GetInt32(mSimIdOrdinal),
+                                MobileNumber = reader.GetString(mobileNoOrdinal),
+                                EmployeeName = employeeNameOrdinal != -1 ? reader.GetString(employeeNameOrdinal) : "N/A", // Safely handle the missing column
+                                IsActive = reader.GetBoolean(isSelectedOrdinal)
                             });
                         }
                     }
@@ -45,6 +60,7 @@ namespace SimCardApi.Repositories.Services
             return simCards;
         }
 
+        // Updated method to safely handle a missing "Employee" column.
         public async Task<IEnumerable<SimCard>> GetTransferDetailsByMasterIdAsync(int masterId)
         {
             var simCards = new List<SimCard>();
@@ -59,12 +75,24 @@ namespace SimCardApi.Repositories.Services
                     await connection.OpenAsync();
                     using (var reader = await cmd.ExecuteReaderAsync())
                     {
+                        // Safely get the ordinal for the 'Employee' column.
+                        int mobileNoOrdinal = reader.GetOrdinal("MobileNo");
+                        int employeeNameOrdinal = -1;
+                        try
+                        {
+                            employeeNameOrdinal = reader.GetOrdinal("Employee");
+                        }
+                        catch (IndexOutOfRangeException)
+                        {
+                            // The column is missing, so we'll handle it below.
+                        }
+
                         while (await reader.ReadAsync())
                         {
                             simCards.Add(new SimCard
                             {
-                                MobileNumber = reader.GetString(reader.GetOrdinal("MobileNo")),
-                                EmployeeName = reader.GetString(reader.GetOrdinal("Employee"))
+                                MobileNumber = reader.GetString(mobileNoOrdinal),
+                                EmployeeName = employeeNameOrdinal != -1 ? reader.GetString(employeeNameOrdinal) : "N/A" // Safely handle if 'Employee' column is not returned.
                             });
                         }
                     }
