@@ -61,7 +61,7 @@ namespace SimCardApi.Repositories.Services
         }
 
         // Updated method to safely handle a missing "Employee" column.
-        public async Task<IEnumerable<SimCard>> GetTransferDetailsByMasterIdAsync(int masterId)
+        public async Task<IEnumerable<SimCard>> GetTransferDetailsByMasterIdAsync(long masterId)
         {
             var simCards = new List<SimCard>();
             using (var connection = new SqlConnection(_connectionString))

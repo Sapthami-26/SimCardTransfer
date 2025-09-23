@@ -34,11 +34,19 @@ namespace SimCardApi.Controllers
         }
 
         [HttpPost("transfer")]
-        public async Task<ActionResult> PostSimCardTransfer([FromBody] SimCardTransferDto transferData)
-        {
-            int masterId = await _repository.AddSimCardTransferAsync(transferData);
-            return Ok(masterId);
-        }
+public async Task<ActionResult> PostSimCardTransfer([FromBody] SimCardTransferRequestDto requestData)
+{
+    // Now you have to manually map the SimCardIds to an empty list
+    var transferData = new SimCardTransferDto
+    {
+        CurrentEmployeeId = requestData.CurrentEmployeeId,
+        TransferToEmployeeId = requestData.TransferToEmployeeId,
+        SimCardIds = new List<int>()
+    };
+
+    int masterId = await _repository.AddSimCardTransferAsync(transferData);
+    return Ok(masterId);
+}
 
         [HttpPut("approve/{SimId}")]
         public async Task<IActionResult> ApproveSimCardTransfer(int simId, [FromQuery] int newOwnerEmployeeId)
