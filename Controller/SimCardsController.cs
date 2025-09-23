@@ -22,8 +22,9 @@ namespace SimCardApi.Controllers
             return Ok(simCards);
         }
 
+        // Changed parameter type to long to match the repository interface
         [HttpGet("transfer/{MasterId}")]
-        public async Task<ActionResult<IEnumerable<SimCard>>> GetTransferDetailsByMasterId(int masterId)
+        public async Task<ActionResult<IEnumerable<SimCard>>> GetTransferDetailsByMasterId(long masterId)
         {
             var simCards = await _repository.GetTransferDetailsByMasterIdAsync(masterId);
             if (simCards == null || !simCards.Any())
@@ -33,20 +34,19 @@ namespace SimCardApi.Controllers
             return Ok(simCards);
         }
 
+        // Updated the parameter to accept SimCardTransferDto directly
         [HttpPost("transfer")]
-public async Task<ActionResult> PostSimCardTransfer([FromBody] SimCardTransferRequestDto requestData)
-{
-    // Now you have to manually map the SimCardIds to an empty list
-    var transferData = new SimCardTransferDto
-    {
-        CurrentEmployeeId = requestData.CurrentEmployeeId,
-        TransferToEmployeeId = requestData.TransferToEmployeeId,
-        SimCardIds = new List<int>()
-    };
+        public async Task<ActionResult> PostSimCardTransfer([FromBody] SimCardTransferDto requestData)
+        {
+            // Validate that the list of SimCardIds is not null or empty
+            if (requestData.SimCardIds == null || requestData.SimCardIds.Count == 0)
+            {
+                return BadRequest("The list of SimCardIds cannot be empty.");
+            }
 
-    int masterId = await _repository.AddSimCardTransferAsync(transferData);
-    return Ok(masterId);
-}
+            int masterId = await _repository.AddSimCardTransferAsync(requestData);
+            return Ok(masterId);
+        }
 
         [HttpPut("approve/{SimId}")]
         public async Task<IActionResult> ApproveSimCardTransfer(int simId, [FromQuery] int newOwnerEmployeeId)

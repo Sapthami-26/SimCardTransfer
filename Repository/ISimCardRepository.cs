@@ -1,4 +1,6 @@
 using SimCardApi.Models;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace SimCardApi.Repositories.Interfaces
 {

@@ -60,7 +60,6 @@ namespace SimCardApi.Repositories.Services
             return simCards;
         }
 
-        // Updated method to safely handle a missing "Employee" column.
         public async Task<IEnumerable<SimCard>> GetTransferDetailsByMasterIdAsync(long masterId)
         {
             var simCards = new List<SimCard>();
@@ -103,11 +102,11 @@ namespace SimCardApi.Repositories.Services
 
         public async Task<int> AddSimCardTransferAsync(SimCardTransferDto transferData)
         {
-            long masterId = 0;
+            int masterId = 0;
             using (var connection = new SqlConnection(_connectionString))
             {
                 await connection.OpenAsync();
-                var transaction = connection.BeginTransaction();
+                SqlTransaction transaction = connection.BeginTransaction();
                 try
                 {
                     // Calls [dbo].[SimCard_InsertSimCardsDetails]
@@ -122,20 +121,28 @@ namespace SimCardApi.Repositories.Services
 
                         await cmd.ExecuteNonQueryAsync();
 
-                        masterId = Convert.ToInt64(outputParam.Value);
+                        masterId = Convert.ToInt32(outputParam.Value);
                     }
 
-                    // Calls [dbo].[SimCard_InsertSimCardsTransferDetails]
+             
+                    var dtSimTransferDetails = new DataTable();
+                    dtSimTransferDetails.Columns.Add("SCTID", typeof(int));
+                    dtSimTransferDetails.Columns.Add("MSimID", typeof(int));
+
                     foreach (var simId in transferData.SimCardIds)
                     {
-                        using (var cmd = new SqlCommand("SimCard_InsertSimCardsTransferDetails", connection, transaction))
-                        {
-                            cmd.CommandType = CommandType.StoredProcedure;
-                            cmd.Parameters.AddWithValue("@SCTID", masterId);
-                            cmd.Parameters.AddWithValue("@MSimID", simId);
-                            await cmd.ExecuteNonQueryAsync();
-                        }
+                        dtSimTransferDetails.Rows.Add(masterId, simId);
                     }
+
+   
+                    using (SqlBulkCopy bulkCopy = new SqlBulkCopy(connection, SqlBulkCopyOptions.Default, transaction))
+                    {
+                        bulkCopy.DestinationTableName = "SimCardTransferDetails";
+                        bulkCopy.ColumnMappings.Add("SCTID", "SCTID");
+                        bulkCopy.ColumnMappings.Add("MSimID", "MSimID");
+                        await bulkCopy.WriteToServerAsync(dtSimTransferDetails);
+                    }
+                    
                     transaction.Commit();
                 }
                 catch
@@ -144,7 +151,7 @@ namespace SimCardApi.Repositories.Services
                     throw;
                 }
             }
-            return (int)masterId;
+            return masterId;
         }
 
         public async Task UpdateSimCardMasterAsync(int simId, int newOwnerEmployeeId)
